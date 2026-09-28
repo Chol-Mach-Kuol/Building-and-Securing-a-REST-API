@@ -27,6 +27,7 @@ import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
+from api.auth import check_auth
 
 # --------------------------------------------------------------------------
 # Paths so we can import from dsa/ and api/ no matter where we run from
@@ -206,6 +207,8 @@ class TransactionHandler(BaseHTTPRequestHandler):
 
     # ---------- GET ----------
     def do_GET(self):
+        if not check_auth(self):
+            return
         def action(tx_id):
             if tx_id is None:
                 return self.send_json(200, self.store.all())
@@ -217,6 +220,8 @@ class TransactionHandler(BaseHTTPRequestHandler):
 
     # ---------- POST ----------
     def do_POST(self):
+        if not check_auth(self):
+            return
         def action(tx_id):
             if tx_id is not None:
                 return self.send_error_json(405, "Use POST /transactions to create")
@@ -227,6 +232,8 @@ class TransactionHandler(BaseHTTPRequestHandler):
 
     # ---------- PUT ----------
     def do_PUT(self):
+        if not check_auth(self):
+            return
         def action(tx_id):
             if tx_id is None:
                 return self.send_error_json(405, "Use PUT /transactions/{id} to update")
@@ -239,6 +246,8 @@ class TransactionHandler(BaseHTTPRequestHandler):
 
     # ---------- DELETE ----------
     def do_DELETE(self):
+        if not check_auth(self):
+            return
         def action(tx_id):
             if tx_id is None:
                 return self.send_error_json(405, "Use DELETE /transactions/{id} to delete")
