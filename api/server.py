@@ -61,9 +61,9 @@ def load_transactions():
     import parse_xml
 
     try:
-        records = parse_xml.parse_xml(XML_PATH)
+        records = parse_xml.parse_sms_xml(XML_PATH)
     except TypeError:          # parser takes no arguments
-        records = parse_xml.parse_xml()
+        records = parse_xml.parse_sms_xml()
     return records
 
 
