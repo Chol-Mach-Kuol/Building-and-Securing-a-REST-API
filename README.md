@@ -129,3 +129,9 @@ curl -u admin:wrongpassword http://localhost:8000/transactions
 ## API Documentation
 
 See [docs/api_docs.md](docs/api_docs.md) for full endpoint documentation including request/response examples and error codes.
+
+---
+
+## Project Report
+
+See [report.pdf](https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API/blob/main/report.pdf) for the full project report including API security introduction, DSA comparison results, and Basic Auth reflection.
