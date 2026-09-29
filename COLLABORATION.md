@@ -33,11 +33,36 @@ Chol has already completed:
 
 ## 👤 KUOL AKECH — API Implementation
 
-### Step 1 — Clone the repo and create your branch
+### Step 1 — Set up Git on your machine (do this once)
+
+Before anything else, make sure Git knows who you are. This is what makes your commits show up under YOUR GitHub profile as a contributor.
+
 ```bash
+git config --global user.name "Kuol Akech"
+git config --global user.email "your-github-email@example.com"
+```
+
+> ⚠️ Use the **exact email address linked to your GitHub account**. If you use a different email, GitHub will NOT count you as a contributor. You can check your GitHub email at https://github.com/settings/emails
+
+### Step 2 — Clone the repo and create your branch
+
+```bash
+# 1. Clone the repo to your own computer
 git clone https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API.git
+
+# 2. Go into the project folder
 cd Building-and-Securing-a-REST-API
+
+# 3. Confirm you are on main and it is up to date
+git checkout main
+git pull origin main
+
+# 4. Create YOUR branch — never work directly on main
 git checkout -b feature/kuol-api
+
+# 5. Confirm you are now on your branch
+git branch
+# You should see: * feature/kuol-api
 ```
 
 ### Step 2 — Create the file `api/server.py` with this code
@@ -164,13 +189,24 @@ curl -X DELETE http://localhost:8000/transactions/1
 
 ### Step 4 — Commit and push your branch
 ```bash
+# Stage your file
 git add api/server.py
+
+# Commit with your name in the message
 git commit -m "Kuol Akech: Add CRUD API endpoints"
-git push origin feature/kuol-api
+
+# Push your branch to GitHub (first time)
+git push -u origin feature/kuol-api
 ```
 
-### Step 5 — Open a Pull Request
-Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API and open a Pull Request from `feature/kuol-api` → `main`. Tag Chol Mach to review and merge.
+### Step 5 — Open a Pull Request on GitHub
+
+1. Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API
+2. You will see a yellow banner saying **"feature/kuol-api had recent pushes"** — click **"Compare & pull request"**
+3. Set base branch to `main` and compare branch to `feature/kuol-api`
+4. Title: `Kuol Akech: Add CRUD API endpoints`
+5. Click **"Create pull request"**
+6. Tag **@cholmach** in the description to review and merge
 
 > **Note:** Abay will add auth on top of your server.py after your PR is merged. Do NOT add auth yourself.
 
@@ -182,14 +218,32 @@ Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API and ope
 
 > **Wait for Kuol's PR to be merged into `main` before starting.**
 
-### Step 1 — Clone/pull the latest main and create your branch
+### Step 1 — Set up Git on your machine (do this once)
+
 ```bash
+git config --global user.name "Abay Tessema"
+git config --global user.email "your-github-email@example.com"
+```
+
+> ⚠️ Use the **exact email address linked to your GitHub account**. Check it at https://github.com/settings/emails
+
+### Step 2 — Clone the repo and create your branch
+
+```bash
+# If you have NOT cloned yet:
 git clone https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API.git
 cd Building-and-Securing-a-REST-API
-# If already cloned:
+
+# If you already cloned, just update and branch:
 git checkout main
 git pull origin main
+
+# Create YOUR branch
 git checkout -b feature/abay-auth
+
+# Confirm you are on your branch
+git branch
+# You should see: * feature/abay-auth
 ```
 
 ### Step 2 — Create `api/auth.py` with this code
@@ -273,13 +327,24 @@ Save screenshots as:
 
 ### Step 5 — Commit and push
 ```bash
+# Stage all your changes
 git add api/auth.py api/server.py screenshots/
+
+# Commit with your name
 git commit -m "Abay Tessema: Add Basic Auth middleware and security screenshots"
-git push origin feature/abay-auth
+
+# Push your branch to GitHub (first time)
+git push -u origin feature/abay-auth
 ```
 
-### Step 6 — Open a Pull Request
-Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API and open a Pull Request from `feature/abay-auth` → `main`. Tag Chol Mach to review and merge.
+### Step 6 — Open a Pull Request on GitHub
+
+1. Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API
+2. Click **"Compare & pull request"** on the banner for `feature/abay-auth`
+3. Set base branch to `main` and compare branch to `feature/abay-auth`
+4. Title: `Abay Tessema: Add Basic Auth middleware and security screenshots`
+5. Click **"Create pull request"**
+6. Tag **@cholmach** in the description to review and merge
 
 ### Step 7 — Write your PDF report section
 
@@ -314,14 +379,32 @@ Write the following in the shared PDF report:
 
 > **Wait for Abay's PR to be merged into `main` before taking final screenshots. You can write the DSA code and docs in parallel.**
 
-### Step 1 — Clone/pull the latest main and create your branch
+### Step 1 — Set up Git on your machine (do this once)
+
 ```bash
+git config --global user.name "Alier Akuang"
+git config --global user.email "your-github-email@example.com"
+```
+
+> ⚠️ Use the **exact email address linked to your GitHub account**. Check it at https://github.com/settings/emails
+
+### Step 2 — Clone the repo and create your branch
+
+```bash
+# If you have NOT cloned yet:
 git clone https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API.git
 cd Building-and-Securing-a-REST-API
-# If already cloned:
+
+# If you already cloned, just update and branch:
 git checkout main
 git pull origin main
+
+# Create YOUR branch
 git checkout -b feature/alier-dsa
+
+# Confirm you are on your branch
+git branch
+# You should see: * feature/alier-dsa
 ```
 
 ### Step 2 — Create `dsa/search.py` with this code
@@ -590,13 +673,24 @@ curl -u admin:momo2024 -X DELETE http://localhost:8000/transactions/1
 
 ### Step 6 — Commit and push
 ```bash
+# Stage all your changes
 git add dsa/search.py docs/api_docs.md screenshots/
+
+# Commit with your name
 git commit -m "Alier Akuang: Add DSA search comparison, API docs, and test screenshots"
-git push origin feature/alier-dsa
+
+# Push your branch to GitHub (first time)
+git push -u origin feature/alier-dsa
 ```
 
-### Step 7 — Open a Pull Request
-Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API and open a Pull Request from `feature/alier-dsa` → `main`. Tag Chol Mach to review and merge.
+### Step 7 — Open a Pull Request on GitHub
+
+1. Go to https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API
+2. Click **"Compare & pull request"** on the banner for `feature/alier-dsa`
+3. Set base branch to `main` and compare branch to `feature/alier-dsa`
+4. Title: `Alier Akuang: Add DSA search comparison, API docs, and test screenshots`
+5. Click **"Create pull request"**
+6. Tag **@cholmach** in the description to review and merge
 
 ### Step 8 — Write your PDF report section
 
