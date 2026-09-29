@@ -132,6 +132,12 @@ See [docs/api_docs.md](docs/api_docs.md) for full endpoint documentation includi
 
 ---
 
+## Team Participation Sheet
+
+See [Team Participation Sheet](https://docs.google.com/spreadsheets/d/1wb6pH5b7q2RrxkZVzKdCwFBWy4tJodqgznDiU_33dQw/edit?usp=sharing) for individual task allocation and contribution tracking.
+
+---
+
 ## Project Report
 
 See [report.pdf](https://drive.google.com/file/d/1e7JvR_ckOxhzf8uevH4JfL3ASbOHj94a/view?usp=sharing) for the full project report including API security introduction, DSA comparison results, and Basic Auth reflection.
