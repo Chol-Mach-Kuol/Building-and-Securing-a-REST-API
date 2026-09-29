@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { font-family: "Times New Roman", serif; font-size: 12pt; line-height: 2; margin: 2.5cm; color: #000; }
+  h1 { font-size: 16pt; text-align: center; }
+  h2 { font-size: 13pt; margin-top: 24pt; }
+  h3 { font-size: 12pt; margin-top: 16pt; }
+  table { border-collapse: collapse; width: 100%; margin: 12pt 0; font-size: 11pt; }
+  th, td { border: 1px solid #000; padding: 4pt 8pt; }
+  th { background: #f0f0f0; }
+  code, pre { font-family: "Courier New", monospace; font-size: 10pt; background: #f5f5f5; padding: 2pt 4pt; }
+  pre { padding: 8pt; display: block; white-space: pre-wrap; }
+  .center { text-align: center; }
+  p { margin: 6pt 0; }
+</style>
+</head>
+<body>
+
+<h1>Building and Securing a REST API</h1>
+<h1>Project Report</h1>
+<p class="center"><strong>Course:</strong> Software Engineering — ALU</p>
+<p class="center"><strong>Team Members:</strong> Chol Mach · Kuol Akech · Abay Tessema · Alier Akuang</p>
+<p class="center"><strong>Repository:</strong> github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API</p>
+
+<hr>
+
+<h2>1. Introduction to API Security</h2>
+
+<p>An Application Programming Interface (API) exposes data and functionality over a network. Without security controls, any client — including malicious ones — can read, modify or delete data. This project secures its API at the transport layer using HTTP Basic Authentication, which is the simplest standard mechanism available in Python's built-in <code>http.server</code> library.</p>
+
+<p>The dataset used is a set of 1,691 real MTN MoMo SMS records parsed from <code>modified_sms_v2.xml</code>. Each record contains sensitive financial information: transaction amounts, sender and receiver names, phone numbers, and account balances. Protecting this data from unauthorised access is therefore not optional — it is a core requirement of the system.</p>
+
+<p>Security in REST APIs typically operates at three levels:</p>
+<ul>
+  <li><strong>Authentication</strong> — confirming who the caller is (implemented in this project via Basic Auth).</li>
+  <li><strong>Authorisation</strong> — deciding what an authenticated caller is allowed to do (not implemented here; all authenticated users have full CRUD access).</li>
+  <li><strong>Transport security</strong> — encrypting data in transit so credentials and responses cannot be intercepted (requires HTTPS; not configured in this local development server).</li>
+</ul>
+
+<h2>2. API Endpoint Documentation</h2>
+
+<p><strong>Base URL:</strong> <code>http://localhost:8000</code><br>
+<strong>Authentication:</strong> HTTP Basic Auth — username <code>admin</code>, password <code>momo2024</code><br>
+<strong>Format:</strong> All requests and responses use JSON.</p>
+
+<h3>2.1 GET /transactions</h3>
+<p>Returns all 1,691 transactions as a JSON array.</p>
+<pre>curl -u admin:momo2024 http://localhost:8000/transactions</pre>
+<p><strong>Response 200 OK:</strong></p>
+<pre>[
+  {
+    "id": 1,
+    "transaction_id": "76662021700",
+    "type": "incoming",
+    "amount": 2000,
+    "sender": "Jane Smith",
+    "receiver": null,
+    "fee": 0,
+    "balance_after": 2000,
+    "timestamp": "10 May 2024 4:30:58 PM"
+  },
+  ...
+]</pre>
+<p><strong>Error codes:</strong> 401 Unauthorized (wrong or missing credentials).</p>
+
+<h3>2.2 GET /transactions/{id}</h3>
+<p>Returns a single transaction by its numeric id.</p>
+<pre>curl -u admin:momo2024 http://localhost:8000/transactions/1</pre>
+<p><strong>Response 200 OK:</strong> the transaction object shown above.</p>
+<p><strong>Error codes:</strong> 401 Unauthorized · 404 Not Found · 400 Bad Request (id is not a number).</p>
+
+<h3>2.3 POST /transactions</h3>
+<p>Creates a new transaction. The server assigns the id automatically.</p>
+<pre>curl -u admin:momo2024 -X POST http://localhost:8000/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"type":"payment","amount":5000,"sender":"self","receiver":"Jane Smith",
+       "fee":100,"balance_after":3000,"timestamp":"2024-05-10 10:00:00"}'</pre>
+<p><strong>Response 201 Created</strong> with a <code>Location</code> header pointing to the new record.</p>
+<p><strong>Error codes:</strong> 401 · 400 (invalid JSON or negative amount).</p>
+
+<h3>2.4 PUT /transactions/{id}</h3>
+<p>Updates one or more fields of an existing transaction. Only the fields sent are changed.</p>
+<pre>curl -u admin:momo2024 -X PUT http://localhost:8000/transactions/1 \
+  -H "Content-Type: application/json" \
+  -d '{"amount":9999}'</pre>
+<p><strong>Response 200 OK:</strong> the full updated transaction.</p>
+<p><strong>Error codes:</strong> 401 · 404 Not Found · 400 Bad Request · 405 Method Not Allowed (PUT without an id).</p>
+
+<h3>2.5 DELETE /transactions/{id}</h3>
+<p>Permanently removes a transaction from the in-memory store.</p>
+<pre>curl -u admin:momo2024 -X DELETE http://localhost:8000/transactions/1</pre>
+<p><strong>Response 200 OK:</strong></p>
+<pre>{ "message": "Transaction 1 deleted", "deleted": { ... } }</pre>
+<p><strong>Error codes:</strong> 401 · 404 Not Found · 405 Method Not Allowed (DELETE without an id).</p>
+
+<h3>2.6 Error Code Summary</h3>
+<table>
+  <tr><th>Code</th><th>Meaning</th></tr>
+  <tr><td>200 OK</td><td>Request succeeded (GET, PUT, DELETE)</td></tr>
+  <tr><td>201 Created</td><td>New transaction added (POST)</td></tr>
+  <tr><td>400 Bad Request</td><td>Invalid JSON, non-numeric id, or negative amount</td></tr>
+  <tr><td>401 Unauthorized</td><td>Credentials missing or wrong</td></tr>
+  <tr><td>404 Not Found</td><td>Transaction or endpoint does not exist</td></tr>
+  <tr><td>405 Method Not Allowed</td><td>Method does not match the URL pattern</td></tr>
+</table>
+
+<h2>3. DSA Integration — Linear Search vs Dictionary Lookup</h2>
+
+<p>The core DSA task was to compare two strategies for finding a transaction by its id, and to measure the difference in speed across different dataset sizes.</p>
+
+<h3>3.1 Linear Search — O(n)</h3>
+<p>The list of transactions is scanned from the beginning. Each record's id is compared to the target until a match is found or the list is exhausted. In the worst case (id not found), every record is checked.</p>
+
+<h3>3.2 Dictionary Lookup — O(1) average</h3>
+<p>All transactions are stored in a Python dictionary keyed by id: <code>{id: transaction}</code>. Python computes a hash of the key and jumps directly to the correct slot, regardless of how many records exist.</p>
+
+<h3>3.3 Results (average time per single lookup)</h3>
+<table>
+  <tr><th>Records</th><th>Linear Search</th><th>Dict Lookup</th><th>Binary Search</th><th>Dict Speed-up</th></tr>
+  <tr><td>20</td><td>0.273 µs</td><td>0.054 µs</td><td>0.314 µs</td><td>5.1×</td></tr>
+  <tr><td>100</td><td>1.073 µs</td><td>0.055 µs</td><td>0.421 µs</td><td>19.5×</td></tr>
+  <tr><td>500</td><td>4.951 µs</td><td>0.053 µs</td><td>0.606 µs</td><td>93.7×</td></tr>
+  <tr><td>1,000</td><td>10.787 µs</td><td>0.054 µs</td><td>0.736 µs</td><td>199.4×</td></tr>
+  <tr><td>1,691</td><td>17.442 µs</td><td>0.055 µs</td><td>0.890 µs</td><td>314.5×</td></tr>
+</table>
+
+<h3>3.4 Worst-case Results (id does not exist)</h3>
+<table>
+  <tr><th>Records</th><th>Linear Search</th><th>Dict Lookup</th></tr>
+  <tr><td>20</td><td>0.449 µs</td><td>0.078 µs</td></tr>
+  <tr><td>100</td><td>1.970 µs</td><td>0.074 µs</td></tr>
+  <tr><td>500</td><td>9.788 µs</td><td>0.081 µs</td></tr>
+  <tr><td>1,000</td><td>18.998 µs</td><td>0.080 µs</td></tr>
+  <tr><td>1,691</td><td>35.830 µs</td><td>0.094 µs</td></tr>
+</table>
+
+<h3>3.5 Reflection</h3>
+<p>Dictionary lookup is faster because Python's hash table resolves a key to a memory address in constant time, regardless of how many entries exist. Linear search time grows proportionally with the number of records — at 1,691 records it is 314.5× slower than dictionary lookup.</p>
+<p>Other data structures that could improve search efficiency:</p>
+<ul>
+  <li><strong>Binary search on a sorted list</strong> — O(log n); measured above. Slower than a dictionary for exact lookups but supports range queries (e.g. all transactions between two dates).</li>
+  <li><strong>Balanced binary search tree (AVL / red-black tree)</strong> — O(log n) for search, insert and delete while keeping data sorted.</li>
+  <li><strong>B-tree index</strong> (used by MySQL/PostgreSQL) — O(log n), optimised for large datasets stored on disk and efficient for both exact and range queries.</li>
+</ul>
+
+<h2>4. Basic Auth Limitations and Stronger Alternatives</h2>
+
+<h3>4.1 Why Basic Auth is Weak</h3>
+<p>HTTP Basic Authentication encodes the username and password in Base64 and sends them in the <code>Authorization</code> header on every request:</p>
+<pre>Authorization: Basic YWRtaW46bW9tbzIwMjQ=</pre>
+<p>Base64 is not encryption — it is trivially reversible. Anyone who can intercept the HTTP traffic (for example, on an unsecured Wi-Fi network) can decode the header and obtain the credentials immediately. The specific weaknesses are:</p>
+<ul>
+  <li><strong>No encryption</strong> — credentials travel in plain text over HTTP.</li>
+  <li><strong>Credentials sent on every request</strong> — every API call exposes the password, increasing the attack surface.</li>
+  <li><strong>No token expiry</strong> — a stolen credential remains valid indefinitely until the password is changed manually.</li>
+  <li><strong>Single shared credential</strong> — all clients use the same username and password, so there is no way to revoke access for one client without affecting all others.</li>
+  <li><strong>No audit trail</strong> — it is impossible to distinguish which client made which request.</li>
+</ul>
+
+<h3>4.2 Stronger Alternatives</h3>
+
+<p><strong>JSON Web Tokens (JWT):</strong> After a successful login, the server issues a signed token containing the user's identity and an expiry time. The client sends this token (not the password) on subsequent requests. The server verifies the signature without storing session state. Tokens expire automatically, limiting the damage if one is stolen.</p>
+
+<p><strong>OAuth 2.0:</strong> An industry-standard authorisation framework used by Google, GitHub and most major APIs. It separates authentication (proving identity) from authorisation (granting specific permissions). Clients receive short-lived access tokens and long-lived refresh tokens. OAuth 2.0 also supports scopes, so a token can be restricted to read-only access, for example.</p>
+
+<p><strong>API Keys with HTTPS:</strong> A unique key is issued to each client. Keys can be revoked individually, rotated on a schedule, and logged per request. This is simpler than OAuth 2.0 and appropriate for server-to-server communication where a human login flow is not needed.</p>
+
+<p>For a production deployment of this API, the recommended approach would be JWT over HTTPS: it eliminates the need to send the password on every request, tokens expire automatically, and the implementation overhead is manageable with standard Python libraries such as <code>PyJWT</code>.</p>
+
+<hr>
+<p class="center"><em>End of Report</em></p>
+
+</body>
+</html>
