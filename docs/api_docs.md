@@ -1,92 +1,43 @@
-# API Documentation — MTN MoMo SMS Transactions
+# MoMo SMS Transactions API
 
-**Base URL:** `http://localhost:8000`
-**Format:** JSON
-**Authentication:** HTTP Basic Auth is required on **every** endpoint.
+This API gives you access to the 1,691 mobile money transactions we parsed from `modified_sms_v2.xml`. You can list them, look one up, add new ones, edit them and delete them.
 
-| Username | Password |
-|---|---|
-| `admin` | `momo2024` |
+Start the server from the repository root:
 
-With curl: `curl -u admin:momo2024 ...`
-In Postman: **Authorization → Basic Auth**.
-The header sent is `Authorization: Basic YWRtaW46bW9tbzIwMjQ=` (base64 of `admin:momo2024`).
-
----
-
-## Transaction fields
-
-Each transaction is produced by the XML parser (`dsa/parse_xml.py`) from one SMS in `modified_sms_v2.xml` (1,691 records).
-
-| Field | Type | Description |
-|---|---|---|
-| `id` | integer | Unique id (1–1691 for the original records; new records get the next number) |
-| `transaction_id` | string / null | MoMo Financial Transaction Id from the SMS |
-| `type` | string | Transaction type, e.g. `incoming`, `payment` |
-| `amount` | number | Amount in RWF |
-| `sender` | string / null | Who sent the money |
-| `receiver` | string / null | Who received the money |
-| `fee` | number | Fee charged in RWF |
-| `balance_after` | number / null | Account balance after the transaction |
-| `timestamp` | string | Date and time the SMS was received, e.g. `10 May 2024 4:30:58 PM` |
-| `date_ms` | string | Same time as Unix epoch milliseconds |
-| `address` | string | SMS sender (`M-Money`) |
-| `body` | string | Original SMS text |
-
----
-
-## 1. GET /transactions — list all transactions
-
-| | |
-|---|---|
-| **Method** | GET |
-| **Endpoint** | `/transactions` |
-| **Auth** | Required |
-
-**Request example**
 ```bash
-curl -u admin:momo2024 http://localhost:8000/transactions
+python3 -m api.server
 ```
 
-**Response — 200 OK** (a JSON list of all 1,691 transactions; first one shown)
-```json
-[
-  {
-    "id": 1,
-    "transaction_id": "76662021700",
-    "type": "incoming",
-    "amount": 2000,
-    "sender": "Jane Smith",
-    "receiver": null,
-    "fee": 0,
-    "balance_after": 2000,
-    "timestamp": "10 May 2024 4:30:58 PM",
-    "date_ms": "1715351458724",
-    "address": "M-Money",
-    "body": "You have received 2000 RWF from Jane Smith (*********013) on your mobile money account at 2024-05-10 16:30:51. Message from sender: . Your new balance:2000 RWF. Financial Transaction Id: 76662021700."
-  },
-  ...
-]
+(On Windows, use `python -m api.server`.) You should see:
+
+```
+Loaded 1691 transactions
+Server running on http://localhost:8000  (Ctrl+C to stop)
 ```
 
-**Error codes:** `401` (missing or wrong credentials)
+Everything goes in and comes out as JSON.
 
----
+## Logging in
 
-## 2. GET /transactions/{id} — get one transaction
+Every request needs Basic Authentication. If you leave it out or get the password wrong, you get a `401 Unauthorized` and nothing happens to the data.
 
-| | |
-|---|---|
-| **Method** | GET |
-| **Endpoint** | `/transactions/{id}` |
-| **Auth** | Required |
+- **Username:** `admin`
+- **Password:** `momo2024`
 
-**Request example**
-```bash
-curl -u admin:momo2024 http://localhost:8000/transactions/1
+With curl, add `-u admin:momo2024` to your command. In Postman, open the **Authorization** tab, pick **Basic Auth** and type the username and password.
+
+Behind the scenes, the client sends this header:
+
+```
+Authorization: Basic YWRtaW46bW9tbzIwMjQ=
 ```
 
-**Response — 200 OK**
+That long string is just `admin:momo2024` in base64. It isn't encrypted, and anyone who sees it can decode it, which is why Basic Auth should only be used over HTTPS in a real system.
+
+## What a transaction looks like
+
+Here's the first record in the dataset, exactly as the API returns it:
+
 ```json
 {
   "id": 1,
@@ -104,76 +55,135 @@ curl -u admin:momo2024 http://localhost:8000/transactions/1
 }
 ```
 
-**Error responses**
+A few notes on the fields:
 
-| Code | When | Body |
-|---|---|---|
-| 400 | id is not a number (e.g. `/transactions/abc`) | `{"error": "Invalid ID"}` |
-| 401 | Missing or wrong credentials | `{"error": "Unauthorized"}` |
-| 404 | No transaction with that id | `{"error": "Transaction not found"}` |
+- `id` is our own number for each record (1 to 1691). The original SMS file didn't have one, so the parser assigns them in order.
+- `transaction_id` is the Financial Transaction Id that MoMo put in the SMS, when there is one.
+- `type` tells you what kind of transaction it was, for example `incoming` or `payment`.
+- `amount`, `fee` and `balance_after` are in Rwandan francs (RWF).
+- `sender` or `receiver` can be `null` when the SMS doesn't mention them.
+- `timestamp` is when the phone received the SMS; `date_ms` is the same moment in milliseconds.
+- `body` is the original SMS text, kept so you can always check where a value came from.
 
 ---
 
-## 3. POST /transactions — add a transaction
+## Get all transactions
 
-| | |
-|---|---|
-| **Method** | POST |
-| **Endpoint** | `/transactions` |
-| **Auth** | Required |
-| **Header** | `Content-Type: application/json` |
+**`GET /transactions`**
 
-The server assigns the `id` automatically.
+Returns every transaction as a list.
 
-**Request example**
 ```bash
-curl -u admin:momo2024 -X POST http://localhost:8000/transactions \
+curl -u admin:momo2024 http://localhost:8000/transactions
+```
+
+You'll get `200 OK` and a long JSON list, 1,691 items in total:
+
+```json
+[
+  {
+    "id": 1,
+    "transaction_id": "76662021700",
+    "type": "incoming",
+    "amount": 2000,
+    "sender": "Jane Smith",
+    ...
+  },
+  ...
+]
+```
+
+**Possible errors:** `401` if the credentials are missing or wrong.
+
+---
+
+## Get one transaction
+
+**`GET /transactions/{id}`**
+
+Returns a single transaction by its id.
+
+```bash
+curl -u admin:momo2024 http://localhost:8000/transactions/1
+```
+
+If it exists, you get `200 OK` and the transaction (it looks like the example above).
+
+**If something goes wrong:**
+
+- Asking for an id that doesn't exist, like `/transactions/99999`, gives `404`:
+```json
+  { "error": "Transaction 99999 not found" }
+```
+- Using something that isn't a number, like `/transactions/abc`, gives `400`:
+```json
+  { "error": "Transaction id must be a number" }
+```
+- Missing or wrong credentials give `401`.
+
+---
+
+## Add a transaction
+
+**`POST /transactions`**
+
+Send the new transaction as JSON in the request body. Don't include an `id`; the server picks the next free number for you.
+
+```bash
+curl -i -u admin:momo2024 -X POST http://localhost:8000/transactions \
   -H "Content-Type: application/json" \
   -d '{"type":"payment","amount":5000,"sender":"self","receiver":"Jane Smith","fee":100,"balance_after":3000,"timestamp":"2024-05-10 10:00:00"}'
 ```
 
-**Response — 201 Created**
+You get `201 Created`. The response includes a `Location` header pointing to the new record, and the body is the saved transaction with its new `id`:
+
+```
+HTTP/1.0 201 Created
+Content-Type: application/json
+Location: /transactions/1692
+```
+
 ```json
 {
+  "id": 1692,
   "type": "payment",
   "amount": 5000,
   "sender": "self",
   "receiver": "Jane Smith",
   "fee": 100,
   "balance_after": 3000,
-  "timestamp": "2024-05-10 10:00:00",
-  "id": 1692
+  "timestamp": "2024-05-10 10:00:00"
 }
 ```
 
-**Error responses**
+**If something goes wrong:**
 
-| Code | When | Body |
-|---|---|---|
-| 400 | Body is not valid JSON | `{"error": "Invalid JSON"}` |
-| 401 | Missing or wrong credentials | `{"error": "Unauthorized"}` |
+- A body that isn't valid JSON gives `400`:
+```json
+  { "error": "Invalid JSON in request body" }
+```
+- Sending a POST to a single record, like `/transactions/5`, gives `405`:
+```json
+  { "error": "Use POST /transactions to create" }
+```
+- Missing or wrong credentials give `401`.
 
 ---
 
-## 4. PUT /transactions/{id} — update a transaction
+## Update a transaction
 
-| | |
-|---|---|
-| **Method** | PUT |
-| **Endpoint** | `/transactions/{id}` |
-| **Auth** | Required |
-| **Header** | `Content-Type: application/json` |
+**`PUT /transactions/{id}`**
 
-Only the fields you send are changed; all other fields keep their values.
+Send only the fields you want to change. Everything else stays as it was.
 
-**Request example**
 ```bash
 curl -u admin:momo2024 -X PUT http://localhost:8000/transactions/1 \
   -H "Content-Type: application/json" \
   -d '{"amount":9999}'
 ```
 
-**Response — 200 OK** (the full updated transaction)
+You get `200 OK` and the full, updated transaction. Only `amount` has changed:
+
 ```json
 {
   "id": 1,
@@ -181,74 +191,89 @@ curl -u admin:momo2024 -X PUT http://localhost:8000/transactions/1 \
   "type": "incoming",
   "amount": 9999,
   "sender": "Jane Smith",
-  "...": "other fields unchanged"
+  ...
 }
 ```
 
-**Error responses**
+**If something goes wrong:**
 
-| Code | When | Body |
-|---|---|---|
-| 400 | id is not a number, or body is not valid JSON | `{"error": "Invalid ID"}` / `{"error": "Invalid JSON"}` |
-| 401 | Missing or wrong credentials | `{"error": "Unauthorized"}` |
-| 404 | No transaction with that id | `{"error": "Transaction not found"}` |
+- An id that doesn't exist gives `404`, e.g. `{ "error": "Transaction 99999 not found" }`.
+- An id that isn't a number gives `400` with `{ "error": "Transaction id must be a number" }`.
+- A body that isn't valid JSON gives `400` with `{ "error": "Invalid JSON in request body" }`.
+- Sending a PUT to `/transactions` (with no id) gives `405` with `{ "error": "Use PUT /transactions/{id} to update" }`.
+- Missing or wrong credentials give `401`.
 
 ---
 
-## 5. DELETE /transactions/{id} — delete a transaction
+## Delete a transaction
 
-| | |
-|---|---|
-| **Method** | DELETE |
-| **Endpoint** | `/transactions/{id}` |
-| **Auth** | Required |
+**`DELETE /transactions/{id}`**
 
-**Request example**
+Removes a transaction.
+
 ```bash
 curl -u admin:momo2024 -X DELETE http://localhost:8000/transactions/1
 ```
 
-**Response — 200 OK**
+You get `200 OK`, a confirmation message, and a copy of the record that was removed:
+
 ```json
-{ "message": "Transaction 1 deleted" }
+{
+  "message": "Transaction 1 deleted",
+  "deleted": {
+    "id": 1,
+    "transaction_id": "76662021700",
+    "type": "incoming",
+    "amount": 2000,
+    "sender": "Jane Smith",
+    ...
+  }
+}
 ```
 
-**Error responses**
+**If something goes wrong:**
 
-| Code | When | Body |
-|---|---|---|
-| 400 | id is not a number | `{"error": "Invalid ID"}` |
-| 401 | Missing or wrong credentials | `{"error": "Unauthorized"}` |
-| 404 | No transaction with that id | `{"error": "Transaction not found"}` |
+- An id that doesn't exist (including one you already deleted) gives `404`, e.g. `{ "error": "Transaction 1 not found" }`.
+- An id that isn't a number gives `400` with `{ "error": "Transaction id must be a number" }`.
+- Sending a DELETE to `/transactions` (with no id) gives `405` with `{ "error": "Use DELETE /transactions/{id} to delete" }`.
+- Missing or wrong credentials give `401`.
 
 ---
 
-## Authentication errors — 401 Unauthorized
+## When authentication fails
 
-Sent when the `Authorization` header is missing, is not Basic, or has the wrong username/password. The request is **not** carried out.
+This is what a request with the wrong password looks like. The `-i` flag makes curl show the headers too:
 
 ```bash
-curl -i -u admin:wrongpassword http://localhost:8000/transactions
+curl -i -u admin:wrongpassword http://localhost:8000/transactions/1
 ```
-```http
+
+```
 HTTP/1.0 401 Unauthorized
 WWW-Authenticate: Basic realm="MoMo API"
 Content-Type: application/json
+```
 
-{"error": "Unauthorized"}
+The `401` status and the `WWW-Authenticate` header tell the client it needs to log in with Basic Auth. You get the same response if you send no credentials at all, and the request is not carried out.
+
+---
+
+## Other errors
+
+- A URL that isn't one of the endpoints above, like `/users`, gives `404`:
+```json
+  { "error": "Endpoint not found" }
 ```
 
 ---
 
-## Error code summary
+## Status codes at a glance
 
-| Code | Meaning |
+| Code | What it means here |
 |---|---|
-| 200 OK | Request succeeded (GET, PUT, DELETE) |
-| 201 Created | New transaction added (POST) |
-| 400 Bad Request | Invalid id or malformed JSON |
-| 401 Unauthorized | Missing or wrong credentials |
-| 404 Not Found | Transaction id or URL path does not exist |
-
-> **Note:** the server keeps transactions in memory. Changes made with POST, PUT and DELETE
-> are lost when the server restarts, and it reloads the original 1,691 records.
+| 200 OK | The request worked (GET, PUT, DELETE) |
+| 201 Created | A new transaction was added (POST) |
+| 400 Bad Request | The id isn't a number, or the JSON body is broken |
+| 401 Unauthorized | Credentials are missing or wrong |
+| 404 Not Found | That transaction, or that URL, doesn't exist |
+| 405 Method Not Allowed | The method doesn't fit the URL (e.g. PUT without an id) |
