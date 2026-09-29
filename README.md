@@ -134,4 +134,4 @@ See [docs/api_docs.md](docs/api_docs.md) for full endpoint documentation includi
 
 ## Project Report
 
-See [report.pdf](https://github.com/Chol-Mach-Kuol/Building-and-Securing-a-REST-API/blob/main/report.pdf) for the full project report including API security introduction, DSA comparison results, and Basic Auth reflection.
+See [report.pdf](https://drive.google.com/file/d/1e7JvR_ckOxhzf8uevH4JfL3ASbOHj94a/view?usp=sharing) for the full project report including API security introduction, DSA comparison results, and Basic Auth reflection.
